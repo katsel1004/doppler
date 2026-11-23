@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>해 보기 | 버저에서 들리는 소리 비교하기</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- KaTeX CSS & JS CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+  <!-- Google Fonts: Noto Sans KR & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    /* 교과서 '해 보기' 배지 스타일 */
+    .textbook-badge {
+      background: linear-gradient(135deg, #9cc848 0%, #84b434 100%);
+      box-shadow: 0 4px 10px rgba(132, 180, 52, 0.28);
+    }
+
+    .textbook-header-bar {
+      background: linear-gradient(90deg, #bae6fd 0%, #e0f2fe 100%);
+    }
+
+    /* 커스텀 슬라이더 스타일 */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #1d4ed8;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #2563eb;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
+      cursor: pointer;
+    }
+
+    /* KaTeX 인라인 수식 정렬 보정 */
+    .katex {
+      font-size: 1.02em;
+    }
+    .katex-display {
+      margin: 0.4em 0;
+    }
+
+    /* 버튼 누름 피드백 */
+    .btn-active-press:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 상단 교과서 활동 헤더 -->
+  <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- 교과서 '해 보기' 타이틀 & 목표 -->
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="textbook-badge text-white font-extrabold text-sm sm:text-base px-4 py-2 rounded-full shrink-0 tracking-tight select-none">
+          해 보기
+        </div>
+        <div class="textbook-header-bar px-4 py-2 rounded-2xl flex-1">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 class="text-lg sm:text-xl font-extrabold text-sky-950 tracking-tight">
+              버저에서 들리는 소리 비교하기
+            </h1>
+            <span class="text-xs font-semibold bg-white/80 text-sky-800 px-2.5 py-0.5 rounded-full border border-sky-200">
+              목표: 음원의 운동에 따른 소리의 변화를 비교할 수 있다.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 메인 제어 컨트롤러 (소리 / 기준음 / 재생 / 배속) -->
+      <div class="flex flex-wrap items-center gap-2 shrink-0">
+        <!-- 소리 켜기/끄기 버튼 -->
+        <button id="btn-audio-toggle" type="button"
+          class="btn-active-press flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-sm transition-all shadow-sm bg-slate-800 text-white hover:bg-slate-700">
+          <svg id="icon-audio-off" class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+          <svg id="icon-audio-on" class="w-4 h-4 text-emerald-400 hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          <span id="label-audio-toggle">버저 소리 켜기</span>
+        </button>
+
+        <!-- 정지 상태 기준음(f_0) 홀드 비교 버튼 -->
+        <button id="btn-ref-tone" type="button" title="누르고 있는 동안 정지한 버저의 고유 진동수 소리를 들려줍니다."
+          class="btn-active-press flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-sm bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-all select-none">
+          <span>기준음 ($f_0$) 듣기</span>
+        </button>
+
+        <!-- 일시정지 / 재개 -->
+        <button id="btn-play-pause" type="button"
+          class="btn-active-press flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm">
+          <span id="label-play-pause">일시정지</span>
+        </button>
+
+        <!-- 슬로우 모션 토글 -->
+        <button id="btn-slow-motion" type="button"
+          class="btn-active-press flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-all">
+          <span>느리게 ($0.25\times$)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 실험실 컨테이너 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- 좌측 영역: 원운동 시뮬레이션 뷰 + 실시간 진동수 그래프 (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+
+      <!-- 1. 가상 실험 캔버스 카드 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base">원운동하는 버저와 관찰자 (위에서 본 모습)</h2>
+          </div>
+          <!-- 범례 -->
+          <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-600">
+            <span class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 rounded-full bg-blue-600"></span> 다가올 때 (높은 소리)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-block w-3 h-3 rounded-full bg-rose-600"></span> 멀어질 때 (낮은 소리)
+            </span>
+            <span class="flex items-center gap-1">
+              <span class="inline-block w-3 h-0.5 bg-emerald-600"></span> 접선 속도 $\vec{v}$
+            </span>
+          </div>
+        </div>
+
+        <!-- 캔버스 래퍼 (반응형 높이 & KaTeX 오버레이) -->
+        <div id="sim-canvas-wrapper" class="relative w-full h-[320px] sm:h-[380px] bg-gradient-to-b from-slate-50 to-white select-none">
+          <canvas id="sim-canvas" class="block w-full h-full"></canvas>
+
+          <!-- 좌측 상단 오버레이: 현재 회전 물리량 요약 (KaTeX 동적 갱신) -->
+          <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-xl px-3 py-2 shadow-sm pointer-events-none text-xs sm:text-sm space-y-0.5">
+            <div id="overlay-source-info" class="text-slate-700 font-medium"></div>
+            <div id="overlay-geom-info" class="text-slate-600"></div>
+          </div>
+
+          <!-- 우측 하단 오버레이: 파장 비교 안내 (KaTeX) -->
+          <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm border border-slate-200/90 rounded-xl px-3 py-1.5 shadow-sm pointer-events-none text-xs text-slate-700">
+            <span id="overlay-wave-info"></span>
+          </div>
+        </div>
+
+        <!-- 표시 옵션 바 -->
+        <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm text-slate-700">
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+            <input id="chk-wavefronts" type="checkbox" checked class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+            <span>음파의 파면(동심원) 표시</span>
+          </label>
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+            <input id="chk-vectors" type="checkbox" checked class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+            <span>속도 성분 ($\vec{v},\ v_s$) 화살표 표시</span>
+          </label>
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none" title="체크 해제 시 소리 크기를 일정하게 유지하여 높낮이(진동수) 변화에만 집중할 수 있습니다.">
+            <input id="chk-distance-gain" type="checkbox" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+            <span>거리에 따른 소리 크기 변화 반영</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. 실시간 관찰 진동수 그래프 카드 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+            <h2 class="font-bold text-slate-800 text-sm sm:text-base">관찰자가 듣는 진동수($f$)의 실시간 변화</h2>
+          </div>
+          <div id="graph-range-badge" class="text-xs font-medium text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200"></div>
+        </div>
+
+        <div id="graph-canvas-wrapper" class="relative w-full h-[190px] sm:h-[210px] bg-white select-none">
+          <canvas id="graph-canvas" class="block w-full h-full"></canvas>
+          <div class="absolute top-2 left-14 text-xs text-slate-500 pointer-events-none">
+            진동수 $f\ (\text{Hz})$
+          </div>
+          <div class="absolute bottom-2 right-3 text-xs text-slate-500 pointer-events-none">
+            시간 $t\ (\text{s})$
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 우측 영역: 실시간 물리량 계측 + 물리량 조절기 + 교과서 탐구 정리 (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col gap-5">
+
+      <!-- 1. 실시간 물리량 계측 대시보드 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base">실시간 물리량 측정</h2>
+          <!-- 운동 상태 배지 -->
+          <span id="motion-status-badge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 transition-colors">
+            가까이 다가오는 중 (높은 소리)
+          </span>
+        </div>
+
+        <!-- 4대 핵심 물리량 카드 (모두 KaTeX 렌더링) -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+            <div class="text-xs text-slate-500 font-medium mb-1">관찰자가 듣는 진동수 ($f$)</div>
+            <div id="val-f-obs" class="text-base sm:text-lg font-bold text-slate-900 min-h-[1.75rem] flex items-center"></div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+            <div class="text-xs text-slate-500 font-medium mb-1">진동수 변화량 ($\Delta f = f - f_0$)</div>
+            <div id="val-delta-f" class="text-base sm:text-lg font-bold text-slate-900 min-h-[1.75rem] flex items-center"></div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+            <div class="text-xs text-slate-500 font-medium mb-1">관찰자 방향 음원 속도 ($v_s$)</div>
+            <div id="val-vs" class="text-base sm:text-lg font-bold text-slate-900 min-h-[1.75rem] flex items-center"></div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+            <div class="text-xs text-slate-500 font-medium mb-1">관측되는 음파의 파장 ($\lambda$)</div>
+            <div id="val-lambda" class="text-base sm:text-lg font-bold text-slate-900 min-h-[1.75rem] flex items-center"></div>
+          </div>
+        </div>
+
+        <!-- 도플러 효과 공식 및 실시간 대입 카드 (KaTeX) -->
+        <div class="bg-sky-50/70 border border-sky-200/80 rounded-xl p-3">
+          <div class="text-xs font-bold text-sky-900 mb-1">적용 공식 및 실시간 계산</div>
+          <div id="val-formula-live" class="text-sm sm:text-base text-slate-800 overflow-x-auto py-0.5"></div>
+        </div>
+      </div>
+
+      <!-- 2. 물리량 조절 슬라이더 패널 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-bold text-slate-800 text-sm sm:text-base">실험 물리량 바꾸기</h2>
+          <!-- 빠른 실험 조건 프리셋 -->
+          <div class="flex items-center gap-1.5">
+            <button type="button" data-preset="default" class="preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+              기본값
+            </button>
+            <button type="button" data-preset="fast" class="preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition">
+              빠른 회전
+            </button>
+            <button type="button" data-preset="stop" class="preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition">
+              정지 ($v = 0$)
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3.5">
+          <!-- 버저 고유 진동수 f_0 -->
+          <div>
+            <div class="flex justify-between items-center text-xs sm:text-sm mb-1">
+              <label for="slider-f0" class="font-semibold text-slate-700">버저의 고유 진동수 ($f_0$)</label>
+              <span id="display-f0" class="font-bold text-blue-700"></span>
+            </div>
+            <input id="slider-f0" type="range" min="250" max="880" step="10" value="440" />
+          </div>
+
+          <!-- 버저 회전 속력 v -->
+          <div>
+            <div class="flex justify-between items-center text-xs sm:text-sm mb-1">
+              <label for="slider-v" class="font-semibold text-slate-700">버저의 회전 속력 ($v$)</label>
+              <span id="display-v" class="font-bold text-blue-700"></span>
+            </div>
+            <input id="slider-v" type="range" min="0" max="40" step="1" value="18" />
+          </div>
+
+          <!-- 회전 반지름 r -->
+          <div>
+            <div class="flex justify-between items-center text-xs sm:text-sm mb-1">
+              <label for="slider-r" class="font-semibold text-slate-700">회전 반지름 ($r$)</label>
+              <span id="display-r" class="font-bold text-blue-700"></span>
+            </div>
+            <input id="slider-r" type="range" min="0.4" max="1.5" step="0.1" value="0.8" />
+          </div>
+
+          <!-- 관찰자까지 거리 D -->
+          <div>
+            <div class="flex justify-between items-center text-xs sm:text-sm mb-1">
+              <label for="slider-D" class="font-semibold text-slate-700">회전 중심~관찰자 거리 ($D$)</label>
+              <span id="display-D" class="font-bold text-blue-700"></span>
+            </div>
+            <input id="slider-D" type="range" min="2.5" max="12.0" step="0.5" value="5.0" />
+          </div>
+
+          <!-- 공기 중 음속 V -->
+          <div>
+            <div class="flex justify-between items-center text-xs sm:text-sm mb-1">
+              <label for="slider-V" class="font-semibold text-slate-700">공기 중 음속 ($V$)</label>
+              <span id="display-V" class="font-bold text-blue-700"></span>
+            </div>
+            <input id="slider-V" type="range" min="330" max="350" step="1" value="340" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 교과서 탐구 정리 및 유의사항 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
+        <div class="flex items-start gap-2.5">
+          <span class="w-3 h-3 rounded-full bg-[#9cc848] mt-1.5 shrink-0"></span>
+          <div class="flex-1">
+            <h3 class="font-bold text-slate-800 text-sm sm:text-base leading-snug">
+              버저가 가까이 다가올 때와 멀어질 때 관찰자가 듣는 소리의 높낮이를 비교해 보자.
+            </h3>
+            <button id="btn-toggle-answer" type="button"
+              class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition">
+              <span id="label-toggle-answer">탐구 결과 확인하기</span>
+            </button>
+            <div id="box-answer" class="hidden mt-2.5 p-3 rounded-xl bg-sky-50 border border-sky-200 text-xs sm:text-sm text-sky-950 leading-relaxed">
+              <p class="font-bold text-sky-900">
+                ➜ 버저가 가까이 <span class="bg-yellow-200 px-1 rounded">다가올 때는 높은 소리</span>($f &gt; f_0$)가,
+                버저가 <span class="bg-yellow-200 px-1 rounded">멀어질 때는 낮은 소리</span>($f &lt; f_0$)가 들린다.
+              </p>
+              <p class="mt-1.5 text-slate-700">
+                다가올 때는 파장이 짧아져($\lambda &lt; \lambda_0$) 단위 시간당 관찰자에게 도달하는 파면의 수가 많아지고, 멀어질 때는 파장이 길어져($\lambda &gt; \lambda_0$) 진동수가 작아지기 때문이다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 교과서 유의사항 -->
+        <div class="flex items-center gap-2.5 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
+          <span class="px-2.5 py-0.5 rounded-full bg-orange-500 text-white font-bold shrink-0">유의</span>
+          <span>실제 실험에서는 버저를 회전시킬 때 손을 놓아 날아가지 않게 주의한다.</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * 1. KaTeX 렌더링 유틸리티 (정적 auto-render + 동적 무깜빡임 렌더링)
+     * =========================================================================
+     */
+    function renderStaticMath() {
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(document.body, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false
+          });
+        } catch (err) {
+          console.warn('KaTeX auto-render warning:', err);
+        }
+      }
+    }
+
+    /**
+     * 동일한 LaTeX 문자열이면 재렌더링을 생략하여 60fps 루프에서도 깜빡임과 부하를 방지합니다.
+     */
+    function renderKatexSafe(element, texString, fallbackText, displayMode = false) {
+      if (!element) return;
+      if (element.dataset.lastTex === texString) return;
+      element.dataset.lastTex = texString;
+
+      if (window.katex && typeof window.katex.render === 'function') {
+        try {
+          window.katex.render(texString, element, {
+            throwOnError: false,
+            displayMode: displayMode
+          });
+          return;
+        } catch (e) {
+          // 폴백 처리
+        }
+      }
+      element.textContent = fallbackText || texString;
+    }
+
+    /**
+     * =========================================================================
+     * 2. 시뮬레이션 상태 및 물리 변수 정의
+     * =========================================================================
+     */
+    const state = {
+      // 조절 가능한 물리량
+      f0: 440,        // 버저 고유 진동수 (Hz)
+      v: 18,          // 버저 회전 접선 속력 (m/s)
+      r: 0.8,         // 회전 반지름 (m)
+      D: 5.0,         // 회전 중심에서 관찰자까지의 거리 (m)
+      V: 340,         // 공기 중 음속 (m/s)
+
+      // 실행 및 표시 옵션
+      isPlaying: true,
+      isSlowMotion: false,
+      showWavefronts: true,
+      showVectors: true,
+      useDistanceGain: false,
+
+      // 실시간 운동 상태
+      simTime: 0,     // 시뮬레이션 누적 시간 (s)
+      theta: 0,       // 현재 회전 각도 (rad, 반시계 방향)
+      vs: 0,          // 관찰자 방향 시선 속도 성분 (m/s, 접근 시 +)
+      fObs: 440,      // 관찰자가 듣는 진동수 (Hz)
+      lambdaObs: 340 / 440, // 관측 파장 (m)
+      currentDist: 5.0,     // 버저와 관찰자 사이 순간 거리 (m)
+
+      // 파면(동심원) 배열 및 그래프 이력
+      wavefronts: [],
+      lastWaveEmitTime: 0,
+      freqHistory: [],
+      lastHistorySampleTime: 0,
+      lastUiUpdateTime: 0
+    };
+
+    // DOM 참조 캐싱
+    const dom = {
+      simCanvas: document.getElementById('sim-canvas'),
+      simWrapper: document.getElementById('sim-canvas-wrapper'),
+      graphCanvas: document.getElementById('graph-canvas'),
+      graphWrapper: document.getElementById('graph-canvas-wrapper'),
+
+      btnAudioToggle: document.getElementById('btn-audio-toggle'),
+      labelAudioToggle: document.getElementById('label-audio-toggle'),
+      iconAudioOn: document.getElementById('icon-audio-on'),
+      iconAudioOff: document.getElementById('icon-audio-off'),
+      btnRefTone: document.getElementById('btn-ref-tone'),
+      btnPlayPause: document.getElementById('btn-play-pause'),
+      labelPlayPause: document.getElementById('label-play-pause'),
+      btnSlowMotion: document.getElementById('btn-slow-motion'),
+
+      chkWavefronts: document.getElementById('chk-wavefronts'),
+      chkVectors: document.getElementById('chk-vectors'),
+      chkDistanceGain: document.getElementById('chk-distance-gain'),
+
+      sliderF0: document.getElementById('slider-f0'),
+      sliderV: document.getElementById('slider-v'),
+      sliderR: document.getElementById('slider-r'),
+      sliderD: document.getElementById('slider-D'),
+      sliderV_sound: document.getElementById('slider-V'),
+
+      displayF0: document.getElementById('display-f0'),
+      displayV: document.getElementById('display-v'),
+      displayR: document.getElementById('display-r'),
+      displayD: document.getElementById('display-D'),
+      displayV_sound: document.getElementById('display-V'),
+
+      overlaySourceInfo: document.getElementById('overlay-source-info'),
+      overlayGeomInfo: document.getElementById('overlay-geom-info'),
+      overlayWaveInfo: document.getElementById('overlay-wave-info'),
+      graphRangeBadge: document.getElementById('graph-range-badge'),
+
+      motionStatusBadge: document.getElementById('motion-status-badge'),
+      valFObs: document.getElementById('val-f-obs'),
+      valDeltaF: document.getElementById('val-delta-f'),
+      valVs: document.getElementById('val-vs'),
+      valLambda: document.getElementById('val-lambda'),
+      valFormulaLive: document.getElementById('val-formula-live'),
+
+      btnToggleAnswer: document.getElementById('btn-toggle-answer'),
+      labelToggleAnswer: document.getElementById('label-toggle-answer'),
+      boxAnswer: document.getElementById('box-answer')
+    };
+
+    /**
+     * =========================================================================
+     * 3. Web Audio API 실시간 버저 사운드 엔진
+     * =========================================================================
+     */
+    const audioEngine = {
+      ctx: null,
+      mainOsc: null,
+      mainFilter: null,
+      mainGain: null,
+      refOsc: null,
+      refGain: null,
+      isEnabled: false,
+      isRefHolding: false,
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+
+        this.ctx = new AudioCtx();
+
+        // 1) 회전 버저 오실레이터 (압전 버저 느낌을 위해 triangle + 저역통과 필터 조합)
+        this.mainOsc = this.ctx.createOscillator();
+        this.mainOsc.type = 'triangle';
+        this.mainOsc.frequency.value = state.f0;
+
+        this.mainFilter = this.ctx.createBiquadFilter();
+        this.mainFilter.type = 'lowpass';
+        this.mainFilter.frequency.value = 1600;
+
+        this.mainGain = this.ctx.createGain();
+        this.mainGain.gain.value = 0;
+
+        this.mainOsc.connect(this.mainFilter);
+        this.mainFilter.connect(this.mainGain);
+        this.mainGain.connect(this.ctx.destination);
+        this.mainOsc.start();
+
+        // 2) 기준음(f_0) 비교용 오실레이터
+        this.refOsc = this.ctx.createOscillator();
+        this.refOsc.type = 'triangle';
+        this.refOsc.frequency.value = state.f0;
+
+        this.refGain = this.ctx.createGain();
+        this.refGain.gain.value = 0;
+
+        this.refOsc.connect(this.refGain);
+        this.refGain.connect(this.ctx.destination);
+        this.refOsc.start();
+      },
+
+      async toggle() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+          await this.ctx.resume();
+        }
+        this.isEnabled = !this.isEnabled;
+        this.updateButtonUI();
+        this.syncSound();
+      },
+
+      async startRefTone() {
+        this.init();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+          await this.ctx.resume();
+        }
+        this.isRefHolding = true;
+        dom.btnRefTone.classList.add('bg-amber-400', 'text-amber-950', 'border-amber-500');
+        this.syncSound();
+      },
+
+      stopRefTone() {
+        if (!this.isRefHolding) return;
+        this.isRefHolding = false;
+        dom.btnRefTone.classList.remove('bg-amber-400', 'text-amber-950', 'border-amber-500');
+        this.syncSound();
+      },
+
+      syncSound() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // 기준음 버튼 누르고 있는 경우: 기준음 f_0만 선명하게 출력
+        if (this.isRefHolding) {
+          this.refOsc.frequency.setTargetAtTime(state.f0, now, 0.01);
+          this.refGain.gain.setTargetAtTime(0.18, now, 0.015);
+          this.mainGain.gain.setTargetAtTime(0, now, 0.015);
+          return;
+        } else {
+          this.refGain.gain.setTargetAtTime(0, now, 0.015);
+        }
+
+        // 일반 버저 소리 출력
+        if (this.isEnabled && state.isPlaying) {
+          this.mainOsc.frequency.setTargetAtTime(state.fObs, now, 0.015);
+          let targetGain = 0.18;
+          if (state.useDistanceGain) {
+            // 거리에 따른 음압 감쇠 (과도한 증폭/소멸 방지를 위해 완만하게 보정)
+            const ratio = state.D / Math.max(0.5, state.currentDist);
+            targetGain = Math.min(0.32, Math.max(0.05, 0.18 * Math.pow(ratio, 1.1)));
+          }
+          this.mainGain.gain.setTargetAtTime(targetGain, now, 0.02);
+        } else {
+          this.mainGain.gain.setTargetAtTime(0, now, 0.02);
+        }
+      },
+
+      updateButtonUI() {
+        if (this.isEnabled) {
+          dom.labelAudioToggle.textContent = '버저 소리 끄기';
+          dom.btnAudioToggle.classList.remove('bg-slate-800', 'hover:bg-slate-700');
+          dom.btnAudioToggle.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+          dom.iconAudioOn.classList.remove('hidden');
+          dom.iconAudioOff.classList.add('hidden');
+        } else {
+          dom.labelAudioToggle.textContent = '버저 소리 켜기';
+          dom.btnAudioToggle.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+          dom.btnAudioToggle.classList.add('bg-slate-800', 'hover:bg-slate-700');
+          dom.iconAudioOn.classList.add('hidden');
+          dom.iconAudioOff.classList.remove('hidden');
+        }
+      }
+    };
+
+    /**
+     * =========================================================================
+     * 4. 물리량 계산 엔진
+     * =========================================================================
+     */
+    function computePhysics() {
+      // 원운동 중심 O(0, 0), 관찰자 P(D, 0)
+      const sx = state.r * Math.cos(state.theta);
+      const sy = state.r * Math.sin(state.theta);
+
+      // 반시계 방향 회전 접선 속도 벡터
+      const vx = -state.v * Math.sin(state.theta);
+      const vy = state.v * Math.cos(state.theta);
+
+      // 버저에서 관찰자까지의 거리 d
+      const dx = state.D - sx;
+      const dy = 0 - sy;
+      const dist = Math.hypot(dx, dy);
+      state.currentDist = dist;
+
+      // 관찰자 방향으로 향하는 시선 속도 성분 v_s (접근 시 +, 후퇴 시 -)
+      const vs = dist > 1e-6 ? (vx * dx + vy * dy) / dist : 0;
+      state.vs = vs;
+
+      // 도플러 효과 공식: f = (V / (V - v_s)) * f_0
+      const fObs = (state.V / (state.V - vs)) * state.f0;
+      state.fObs = fObs;
+
+      // 관찰자 방향 파장: lambda = V / f
+      state.lambdaObs = state.V / fObs;
+    }
+
+    /**
+     * =========================================================================
+     * 5. 슬라이더 & UI KaTeX 업데이트
+     * =========================================================================
+     */
+    function updateSliderDisplays() {
+      renderKatexSafe(dom.displayF0, `f_0 = ${state.f0}\\text{ Hz}`, `f0 = ${state.f0} Hz`);
+      renderKatexSafe(dom.displayV, `v = ${state.v.toFixed(0)}\\text{ m/s}`, `v = ${state.v} m/s`);
+      renderKatexSafe(dom.displayR, `r = ${state.r.toFixed(1)}\\text{ m}`, `r = ${state.r.toFixed(1)} m`);
+      renderKatexSafe(dom.displayD, `D = ${state.D.toFixed(1)}\\text{ m}`, `D = ${state.D.toFixed(1)} m`);
+      renderKatexSafe(dom.displayV_sound, `V = ${state.V}\\text{ m/s}`, `V = ${state.V} m/s`);
+
+      // 최대/최소 가능 진동수 계산 (근사 범위 안내용)
+      const fMax = (state.V / (state.V - state.v)) * state.f0;
+      const fMin = (state.V / (state.V + state.v)) * state.f0;
+      renderKatexSafe(
+        dom.graphRangeBadge,
+        `f_0 = ${state.f0}\\text{ Hz} \\quad (f_{\\min} \\approx ${fMin.toFixed(1)}\\text{ Hz},\\; f_{\\max} \\approx ${fMax.toFixed(1)}\\text{ Hz})`,
+        `f0 = ${state.f0} Hz`
+      );
+    }
+
+    function updateTelemetryUI(force = false) {
+      const now = performance.now();
+      // 12fps 주기로 KaTeX 수식 계측판 업데이트 (슬라이더 조작 시 즉시 갱신)
+      if (!force && now - state.lastUiUpdateTime < 80) return;
+      state.lastUiUpdateTime = now;
+
+      const deltaF = state.fObs - state.f0;
+      const signF = deltaF >= 0.05 ? '+' : '';
+      const signVs = state.vs >= 0.05 ? '+' : '';
+
+      // 1) 상태 배지 업데이트
+      if (state.v === 0 || Math.abs(state.vs) < 0.15) {
+        dom.motionStatusBadge.textContent = '시선 속도 0 (원래 높낮이)';
+        dom.motionStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 transition-colors';
+      } else if (state.vs > 0) {
+        dom.motionStatusBadge.textContent = '가까이 다가오는 중 (높은 소리)';
+        dom.motionStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 transition-colors';
+      } else {
+        dom.motionStatusBadge.textContent = '멀어지는 중 (낮은 소리)';
+        dom.motionStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 transition-colors';
+      }
+
+      // 2) 4대 계측 카드 KaTeX 렌더링
+      renderKatexSafe(
+        dom.valFObs,
+        `f = ${state.fObs.toFixed(1)}\\text{ Hz}`,
+        `f = ${state.fObs.toFixed(1)} Hz`
+      );
+
+      const deltaColor = deltaF > 0.2 ? '\\color{#1d4ed8}' : (deltaF < -0.2 ? '\\color{#be123c}' : '');
+      renderKatexSafe(
+        dom.valDeltaF,
+        `${deltaColor}\\Delta f = ${signF}${deltaF.toFixed(1)}\\text{ Hz}`,
+        `Δf = ${signF}${deltaF.toFixed(1)} Hz`
+      );
+
+      renderKatexSafe(
+        dom.valVs,
+        `v_s = ${signVs}${state.vs.toFixed(1)}\\text{ m/s}`,
+        `vs = ${signVs}${state.vs.toFixed(1)} m/s`
+      );
+
+      renderKatexSafe(
+        dom.valLambda,
+        `\\lambda = ${state.lambdaObs.toFixed(3)}\\text{ m}`,
+        `λ = ${state.lambdaObs.toFixed(3)} m`
+      );
+
+      // 3) 공식 및 실시간 대입 수식 렌더링
+      const vsFormatted = state.vs >= 0
+        ? `- ${state.vs.toFixed(1)}`
+        : `+ ${Math.abs(state.vs).toFixed(1)}`;
+      renderKatexSafe(
+        dom.valFormulaLive,
+        `f = \\frac{V}{V - v_s} f_0 = \\frac{${state.V}}{${state.V} ${vsFormatted}} \\times ${state.f0} = \\mathbf{${state.fObs.toFixed(1)}\\text{ Hz}}`,
+        `f = (${state.V} / (${state.V} - ${state.vs.toFixed(1)})) * ${state.f0} = ${state.fObs.toFixed(1)} Hz`,
+        true
+      );
+
+      // 4) 캔버스 오버레이 라벨 KaTeX 업데이트
+      renderKatexSafe(
+        dom.overlaySourceInfo,
+        `\\text{고유 진동수 } f_0 = ${state.f0}\\text{ Hz}, \\quad \\text{회전 속력 } v = ${state.v}\\text{ m/s}`,
+        `f0 = ${state.f0} Hz, v = ${state.v} m/s`
+      );
+      renderKatexSafe(
+        dom.overlayGeomInfo,
+        `\\text{반지름 } r = ${state.r.toFixed(1)}\\text{ m}, \\quad \\text{관찰자 거리 } D = ${state.D.toFixed(1)}\\text{ m}, \\quad \\text{음속 } V = ${state.V}\\text{ m/s}`,
+        `r = ${state.r.toFixed(1)} m, D = ${state.D.toFixed(1)} m, V = ${state.V} m/s`
+      );
+
+      const lambda0 = state.V / state.f0;
+      renderKatexSafe(
+        dom.overlayWaveInfo,
+        `\\text{정지 파장 } \\lambda_0 = ${lambda0.toFixed(3)}\\text{ m} \\;\\rightarrow\\; \\text{관측 파장 } \\lambda = ${state.lambdaObs.toFixed(3)}\\text{ m}`,
+        `λ0 = ${lambda0.toFixed(3)} m -> λ = ${state.lambdaObs.toFixed(3)} m`
+      );
+    }
+
+    /**
+     * =========================================================================
+     * 6. 캔버스 리사이즈 및 고해상도(DPR) 대응
+     * =========================================================================
+     */
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+
+      // 시뮬레이션 캔버스
+      const simRect = dom.simWrapper.getBoundingClientRect();
+      dom.simCanvas.width = Math.max(1, Math.floor(simRect.width * dpr));
+      dom.simCanvas.height = Math.max(1, Math.floor(simRect.height * dpr));
+
+      // 그래프 캔버스
+      const graphRect = dom.graphWrapper.getBoundingClientRect();
+      dom.graphCanvas.width = Math.max(1, Math.floor(graphRect.width * dpr));
+      dom.graphCanvas.height = Math.max(1, Math.floor(graphRect.height * dpr));
+    }
+
+    /**
+     * =========================================================================
+     * 7. 상단 시뮬레이션 캔버스 렌더링 (원운동 + 파면 + 벡터 + 일러스트)
+     * =========================================================================
+     */
+    function drawSimulationCanvas() {
+      const ctx = dom.simCanvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const width = dom.simCanvas.width / dpr;
+      const height = dom.simCanvas.height / dpr;
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+
+      // 물리 좌표(m) -> 화면 픽셀 변환 스케일 계산
+      // 좌측 끝 (O - r)부터 우측 끝 (O + D)까지 화면 너비의 76% 안에 들어오도록 자동 스케일
+      const totalSpanMeters = state.r + state.D;
+      const maxRadiusPixels = height * 0.34;
+      const scaleByWidth = (width * 0.76) / Math.max(2.5, totalSpanMeters);
+      const scaleByHeight = maxRadiusPixels / Math.max(0.5, state.r);
+      const scale = Math.min(scaleByWidth, scaleByHeight);
+
+      const centerX = width * 0.12 + state.r * scale;
+      const centerY = height * 0.54;
+      const obsX = centerX + state.D * scale;
+      const obsY = centerY;
+
+      // 버저 화면 좌표 (Canvas y축은 아래쪽이 +이므로 반시계 회전을 위해 y에 -부호 적용)
+      const buzzerMetersX = state.r * Math.cos(state.theta);
+      const buzzerMetersY = state.r * Math.sin(state.theta);
+      const buzzerX = centerX + buzzerMetersX * scale;
+      const buzzerY = centerY - buzzerMetersY * scale;
+
+      // 1) 기준선 (회전 중심 ~ 관찰자 시선축)
+      ctx.save();
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(obsX, obsY);
+      ctx.stroke();
+      ctx.restore();
+
+      // 2) 원운동 궤도 점선
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, state.r * scale, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // 3) 팽창하는 음파 파면(동심원) 그리기
+      if (state.showWavefronts) {
+        for (let i = 0; i < state.wavefronts.length; i++) {
+          const wf = state.wavefronts[i];
+          const age = state.simTime - wf.emitTime;
+          if (age < 0) continue;
+          const radiusPx = age * state.V * scale * 0.14; // 시각적 파장 간격이 명확히 보이도록 파면 전파 시각화 배율 적용
+          const maxVisibleRadius = width * 0.95;
+          if (radiusPx > maxVisibleRadius) continue;
+
+          const alpha = Math.max(0, 0.55 * (1 - radiusPx / maxVisibleRadius));
+          const wfX = centerX + wf.x * scale;
+          const wfY = centerY - wf.y * scale;
+
+          ctx.beginPath();
+          ctx.arc(wfX, wfY, radiusPx, 0, Math.PI * 2);
+          ctx.strokeStyle = wf.approaching
+            ? `rgba(37, 99, 235, ${alpha.toFixed(3)})`
+            : `rgba(225, 29, 72, ${alpha.toFixed(3)})`;
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+        }
+      }
+
+      // 4) 줄(끈) 연결선 (중심 손 위치 -> 버저)
+      ctx.save();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(buzzerX, buzzerY);
+      ctx.stroke();
+      ctx.restore();
+
+      // 5) 중앙 회전시키는 사람 아이콘 (위에서 본 모습)
+      drawSpinnerPerson(ctx, centerX, centerY);
+
+      // 6) 우측 관찰자 아이콘 (귀 기울여 듣는 모습)
+      const isReceivingHigh = state.vs > 0.15 && state.v > 0;
+      const isReceivingLow = state.vs < -0.15 && state.v > 0;
+      drawObserverPerson(ctx, obsX, obsY, isReceivingHigh, isReceivingLow);
+
+      // 7) 속도 벡터 화살표 (접선 속도 v, 시선 속도 성분 v_s)
+      if (state.showVectors && state.v > 0) {
+        const vecScale = 1.6; // 픽셀/속력 비율
+        // 접선 속도 벡터 v
+        const vxPx = -state.v * Math.sin(state.theta) * vecScale;
+        const vyPx = -state.v * Math.cos(state.theta) * vecScale; // 캔버스 y반전
+        drawArrow(ctx, buzzerX, buzzerY, buzzerX + vxPx, buzzerY + vyPx, '#059669', 2.6, 'v');
+
+        // 관찰자 방향 시선 속도 성분 v_s
+        const dx = obsX - buzzerX;
+        const dy = obsY - buzzerY;
+        const dPx = Math.hypot(dx, dy);
+        if (dPx > 1 && Math.abs(state.vs) > 0.3) {
+          const ux = dx / dPx;
+          const uy = dy / dPx;
+          const vsLen = state.vs * vecScale;
+          const vsColor = state.vs > 0 ? '#2563eb' : '#e11d48';
+          drawArrow(ctx, buzzerX, buzzerY, buzzerX + ux * vsLen, buzzerY + uy * vsLen, vsColor, 2.6, 'vs');
+        }
+      }
+
+      // 8) 회전하는 버저 본체 그리기
+      const buzzerColor = isReceivingHigh ? '#2563eb' : (isReceivingLow ? '#e11d48' : '#0f172a');
+      ctx.save();
+      // 음파 방출 후광 효과
+      if (state.isPlaying) {
+        const pulse = 13 + Math.sin(state.simTime * 28) * 3;
+        ctx.beginPath();
+        ctx.arc(buzzerX, buzzerY, pulse, 0, Math.PI * 2);
+        ctx.fillStyle = isReceivingHigh
+          ? 'rgba(37, 99, 235, 0.2)'
+          : (isReceivingLow ? 'rgba(225, 29, 72, 0.2)' : 'rgba(16, 185, 129, 0.2)');
+        ctx.fill();
+      }
+
+      // 버저 몸체
+      ctx.beginPath();
+      ctx.arc(buzzerX, buzzerY, 8.5, 0, Math.PI * 2);
+      ctx.fillStyle = buzzerColor;
+      ctx.fill();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // 버저 텍스트 라벨
+      ctx.font = 'bold 11px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = buzzerColor;
+      ctx.textAlign = 'center';
+      ctx.fillText('버저', buzzerX, buzzerY - 14);
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    /**
+     * 화살표 렌더링 헬퍼
+     */
+    function drawArrow(ctx, x1, y1, x2, y2, color, lineWidth, label) {
+      const headLen = 8;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      if (label) {
+        ctx.font = 'italic bold 12px "Times New Roman", serif';
+        ctx.fillText(label, x2 + Math.cos(angle) * 10, y2 + Math.sin(angle) * 10 + 4);
+      }
+      ctx.restore();
+    }
+
+    /**
+     * 중앙 회전시키는 사람 아이콘
+     */
+    function drawSpinnerPerson(ctx, x, y) {
+      ctx.save();
+      // 어깨/몸통
+      ctx.beginPath();
+      ctx.ellipse(x, y + 6, 13, 8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#f472b6'; // 교과서 분홍 상의 모티프
+      ctx.fill();
+
+      // 머리
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+
+      // 손잡이 중심점
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#facc15';
+      ctx.fill();
+
+      ctx.font = '600 11px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.textAlign = 'center';
+      ctx.fillText('회전 중심', x, y + 26);
+      ctx.restore();
+    }
+
+    /**
+     * 우측 관찰자 아이콘
+     */
+    function drawObserverPerson(ctx, x, y, isHigh, isLow) {
+      ctx.save();
+      // 음파 수신 파동 표시
+      const waveColor = isHigh ? '#2563eb' : (isLow ? '#e11d48' : '#64748b');
+      ctx.strokeStyle = waveColor;
+      ctx.lineWidth = 2;
+      for (let k = 1; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.arc(x - 10, y, 8 + k * 6, Math.PI * 0.72, Math.PI * 1.28);
+        ctx.stroke();
+      }
+
+      // 어깨/몸통 (교과서 노란 가디건 모티프)
+      ctx.beginPath();
+      ctx.ellipse(x + 4, y + 6, 10, 15, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#facc15';
+      ctx.fill();
+
+      // 머리
+      ctx.beginPath();
+      ctx.arc(x + 2, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+
+      ctx.font = 'bold 12px "Noto Sans KR", sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.fillText('관찰자', x + 4, y + 32);
+      ctx.restore();
+    }
+
+    /**
+     * =========================================================================
+     * 8. 하단 실시간 진동수-시간(f-t) 그래프 렌더링
+     * =========================================================================
+     */
+    function drawGraphCanvas() {
+      const ctx = dom.graphCanvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const width = dom.graphCanvas.width / dpr;
+      const height = dom.graphCanvas.height / dpr;
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+
+      const padLeft = 52;
+      const padRight = 18;
+      const padTop = 24;
+      const padBottom = 26;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+
+      // Y축 범위 동적 결정 (최소 ±35Hz 여유 확보)
+      const maxShift = Math.max(35, Math.ceil((state.f0 * state.v) / Math.max(1, state.V - state.v) * 1.25));
+      const fMinAxis = Math.max(50, state.f0 - maxShift);
+      const fMaxAxis = state.f0 + maxShift;
+
+      const mapY = (freq) => {
+        const ratio = (freq - fMinAxis) / (fMaxAxis - fMinAxis);
+        return padTop + plotH * (1 - ratio);
+      };
+
+      const yZero = mapY(state.f0);
+
+      // 1) 배경 영역 구분 (위쪽: 높은 소리 영역, 아래쪽: 낮은 소리 영역)
+      ctx.fillStyle = 'rgba(239, 246, 255, 0.55)';
+      ctx.fillRect(padLeft, padTop, plotW, Math.max(0, yZero - padTop));
+      ctx.fillStyle = 'rgba(255, 241, 242, 0.55)';
+      ctx.fillRect(padLeft, yZero, plotW, Math.max(0, padTop + plotH - yZero));
+
+      // 2) 좌표축 및 눈금
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, padTop);
+      ctx.lineTo(padLeft, padTop + plotH);
+      ctx.lineTo(padLeft + plotW, padTop + plotH);
+      ctx.stroke();
+
+      // 고유 진동수 f_0 기준 점선
+      ctx.save();
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padLeft, yZero);
+      ctx.lineTo(padLeft + plotW, yZero);
+      ctx.stroke();
+      ctx.restore();
+
+      // Y축 수치 라벨
+      ctx.font = '600 11px "Inter", sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(fMaxAxis)}`, padLeft - 6, padTop + 8);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(`${Math.round(state.f0)} (f₀)`, padLeft - 6, yZero + 4);
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`${Math.round(fMinAxis)}`, padLeft - 6, padTop + plotH);
+
+      // 3) 진동수 곡선 그리기 (최근 6초 데이터)
+      const timeWindow = 6.0;
+      if (state.freqHistory.length > 1) {
+        const latestT = state.freqHistory[state.freqHistory.length - 1].t;
+        const startT = latestT - timeWindow;
+
+        ctx.lineWidth = 2.6;
+        for (let i = 1; i < state.freqHistory.length; i++) {
+          const p0 = state.freqHistory[i - 1];
+          const p1 = state.freqHistory[i];
+          if (p1.t < startT) continue;
+
+          const x0 = padLeft + ((p0.t - startT) / timeWindow) * plotW;
+          const x1 = padLeft + ((p1.t - startT) / timeWindow) * plotW;
+          const y0 = mapY(p0.f);
+          const y1 = mapY(p1.f);
+
+          ctx.strokeStyle = p1.f >= state.f0 ? '#2563eb' : '#e11d48';
+          ctx.beginPath();
+          ctx.moveTo(Math.max(padLeft, x0), y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
+
+        // 현재 시점 포인트
+        const lastPt = state.freqHistory[state.freqHistory.length - 1];
+        const currX = padLeft + plotW;
+        const currY = mapY(lastPt.f);
+        ctx.beginPath();
+        ctx.arc(currX, currY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = lastPt.f >= state.f0 ? '#1d4ed8' : '#be123c';
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    /**
+     * =========================================================================
+     * 9. 메인 애니메이션 루프
+     * =========================================================================
+     */
+    let lastFrameTime = performance.now();
+
+    function animate(now) {
+      const rawDt = Math.min(0.05, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      if (state.isPlaying) {
+        const timeScale = state.isSlowMotion ? 0.25 : 1.0;
+        const dt = rawDt * timeScale;
+        state.simTime += dt;
+
+        // 각속도 omega = v / r
+        const omega = state.r > 0 ? state.v / state.r : 0;
+        state.theta = (state.theta + omega * dt) % (Math.PI * 2);
+
+        computePhysics();
+
+        // 파면 방출 주기 (고유 진동수에 비례하되 시각적으로 겹치지 않게 조절)
+        const emitInterval = Math.max(0.07, 65 / state.f0);
+        if (state.simTime - state.lastWaveEmitTime >= emitInterval) {
+          state.lastWaveEmitTime = state.simTime;
+          state.wavefronts.push({
+            x: state.r * Math.cos(state.theta),
+            y: state.r * Math.sin(state.theta),
+            emitTime: state.simTime,
+            approaching: state.vs >= 0
+          });
+          if (state.wavefronts.length > 45) {
+            state.wavefronts.shift();
+          }
+        }
+
+        // 그래프 데이터 샘플링
+        if (state.simTime - state.lastHistorySampleTime >= 0.025) {
+          state.lastHistorySampleTime = state.simTime;
+          state.freqHistory.push({ t: state.simTime, f: state.fObs });
+          while (state.freqHistory.length > 0 && state.simTime - state.freqHistory[0].t > 6.5) {
+            state.freqHistory.shift();
+          }
+        }
+
+        audioEngine.syncSound();
+      }
+
+      drawSimulationCanvas();
+      drawGraphCanvas();
+      updateTelemetryUI(false);
+
+      requestAnimationFrame(animate);
+    }
+
+    /**
+     * =========================================================================
+     * 10. 사용자 이벤트 바인딩
+     * =========================================================================
+     */
+    function bindEvents() {
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+        drawSimulationCanvas();
+        drawGraphCanvas();
+      });
+
+      // 오디오 토글
+      dom.btnAudioToggle.addEventListener('click', () => {
+        audioEngine.toggle();
+      });
+
+      // 기준음(f_0) 듣기 (마우스 & 터치 모두 지원)
+      dom.btnRefTone.addEventListener('mousedown', () => audioEngine.startRefTone());
+      dom.btnRefTone.addEventListener('mouseup', () => audioEngine.stopRefTone());
+      dom.btnRefTone.addEventListener('mouseleave', () => audioEngine.stopRefTone());
+      dom.btnRefTone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        audioEngine.startRefTone();
+      }, { passive: false });
+      dom.btnRefTone.addEventListener('touchend', () => audioEngine.stopRefTone());
+
+      // 재생 / 일시정지
+      dom.btnPlayPause.addEventListener('click', () => {
+        state.isPlaying = !state.isPlaying;
+        dom.labelPlayPause.textContent = state.isPlaying ? '일시정지' : '다시 재생';
+        audioEngine.syncSound();
+      });
+
+      // 느리게 보기 (0.25x)
+      dom.btnSlowMotion.addEventListener('click', () => {
+        state.isSlowMotion = !state.isSlowMotion;
+        if (state.isSlowMotion) {
+          dom.btnSlowMotion.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+          dom.btnSlowMotion.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+        } else {
+          dom.btnSlowMotion.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+          dom.btnSlowMotion.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+        }
+      });
+
+      // 표시 옵션 체크박스
+      dom.chkWavefronts.addEventListener('change', (e) => {
+        state.showWavefronts = e.target.checked;
+      });
+      dom.chkVectors.addEventListener('change', (e) => {
+        state.showVectors = e.target.checked;
+      });
+      dom.chkDistanceGain.addEventListener('change', (e) => {
+        state.useDistanceGain = e.target.checked;
+        audioEngine.syncSound();
+      });
+
+      // 물리량 슬라이더 연동
+      const handleParamChange = () => {
+        state.f0 = Number(dom.sliderF0.value);
+        state.v = Number(dom.sliderV.value);
+        state.r = Number(dom.sliderR.value);
+        state.D = Number(dom.sliderD.value);
+        state.V = Number(dom.sliderV_sound.value);
+
+        computePhysics();
+        updateSliderDisplays();
+        updateTelemetryUI(true);
+        audioEngine.syncSound();
+      };
+
+      [dom.sliderF0, dom.sliderV, dom.sliderR, dom.sliderD, dom.sliderV_sound].forEach((slider) => {
+        slider.addEventListener('input', handleParamChange);
+      });
+
+      // 빠른 프리셋 버튼
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const preset = btn.dataset.preset;
+          if (preset === 'default') {
+            dom.sliderF0.value = 440;
+            dom.sliderV.value = 18;
+            dom.sliderR.value = 0.8;
+            dom.sliderD.value = 5.0;
+            dom.sliderV_sound.value = 340;
+          } else if (preset === 'fast') {
+            dom.sliderF0.value = 520;
+            dom.sliderV.value = 34;
+            dom.sliderR.value = 1.0;
+            dom.sliderD.value = 4.5;
+            dom.sliderV_sound.value = 340;
+          } else if (preset === 'stop') {
+            dom.sliderV.value = 0;
+          }
+          handleParamChange();
+        });
+      });
+
+      // 교과서 탐구 결과 펼치기/접기
+      dom.btnToggleAnswer.addEventListener('click', () => {
+        const isHidden = dom.boxAnswer.classList.contains('hidden');
+        if (isHidden) {
+          dom.boxAnswer.classList.remove('hidden');
+          dom.labelToggleAnswer.textContent = '탐구 결과 접기';
+        } else {
+          dom.boxAnswer.classList.add('hidden');
+          dom.labelToggleAnswer.textContent = '탐구 결과 확인하기';
+        }
+      });
+    }
+
+    /**
+     * =========================================================================
+     * 11. 초기화 실행
+     * =========================================================================
+     */
+    window.addEventListener('DOMContentLoaded', () => {
+      renderStaticMath();
+      resizeCanvases();
+      computePhysics();
+      updateSliderDisplays();
+      updateTelemetryUI(true);
+      bindEvents();
+
+      lastFrameTime = performance.now();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
